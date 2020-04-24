@@ -1,3 +1,8 @@
+<#
+  Version 1.1
+  https://github.com/Cinimajig/PsModule-JWT
+#>
+
 class JWTToken {
 
   [String]$Header
@@ -19,28 +24,6 @@ class JWTToken {
   }
 }
 
-Function ConvertTo-Base64 {
-  Param(
-    [Parameter(Mandatory = $true, ValueFromPipeline = $true)]$InputObject,
-    [Parameter()][Switch]$FromCharArray
-  )
-
-  If ($FromCharArray) {
-    Return [System.Convert]::ToBase64String([char[]]$InputObject) -replace '\+', '-' -replace '/', '_' -replace '='
-  }
-  Else {
-    Return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($InputObject.Trim())) -replace '\+', '-' -replace '/', '_' -replace '='
-  }
-}
-
-Function ConvertFrom-Base64 {
-  Param(
-    [Parameter(Mandatory = $true, ValueFromPipeline = $true)][String]$Base64String
-  )
-
-  Return [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($Base64String.Trim())) -replace '\+', '-' -replace '/', '_' -replace '='
-}
-
 Function New-JWT {
   Param(
     [Parameter(Mandatory = $true, ValueFromPipeline = $true, HelpMessage = "Dictionary, Object or Hashtable")][ValidateNotNullOrEmpty()]$InputObject,
@@ -59,17 +42,15 @@ Function New-JWT {
     
     $HmacSecret = $PSBoundParameters.HmacSecret
 
-    $alg = "HS256"
+    $alg = Switch ($Algorithm.Trim()) {
+      "HS256" { "HMACSHA256" }
+      "HS384" { "HMACSHA384" }
+      "HS512" { "HMACSHA512" }
 
-    Switch ($Algorithm.Trim()) {
-      "HS256" { $alg = "HMACSHA256" }
-      "HS384" { $alg = "HMACSHA384" }
-      "HS512" { $alg = "HMACSHA512" }
-
-      Default { $alg = "HMACSHA256" }
+      Default { "HMACSHA256" }
     }
 
-    $JsonHeaders = ConvertTo-Base64 -InputObject "{`"alg`":`"$($Algorithm.Trim())`",`"typ`":`"JWT`"}"
+    $JsonHeaders = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("{`"alg`":`"$($Algorithm.Trim())`",`"typ`":`"JWT`"}")) -replace '\+', '-' -replace '/', '_' -replace '='
 
     If ($InputObject.GetType().Name -eq "String") {
       $JsonPayload = $InputObject.Trim()
@@ -78,8 +59,6 @@ Function New-JWT {
       $JsonPayload = $InputObject | ConvertTo-Json -Compress
     }
 
-    # If ($JsonPayload -match '\\?"exp\\?":[\d]{10,20}') {
-
     $Payload = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($JsonPayload)) -replace '\+', '-' -replace '/', '_' -replace '='
     $Hash = [System.Security.Cryptography.HashAlgorithm]::Create($alg)
 
@@ -87,7 +66,7 @@ Function New-JWT {
       $Hash.Key = [System.Text.Encoding]::UTF8.GetBytes($HmacSecret)
     }
       
-    $Signature = $Hash.ComputeHash([System.Text.Encoding]::UTF8.GetBytes("$JsonHeaders.$Payload")) #| ConvertTo-Base64 -FromCharArray
+    $Signature = $Hash.ComputeHash([System.Text.Encoding]::UTF8.GetBytes("$JsonHeaders.$Payload"))
      
     If ($OutObject) {
       Return [JWTToken]::New($JsonHeaders, $Payload, ([System.Convert]::ToBase64String($Signature) -replace '\+', '-' -replace '/', '_' -replace '='))
@@ -95,12 +74,6 @@ Function New-JWT {
     Else {
       Return "$JsonHeaders.$Payload.$([System.Convert]::ToBase64String($Signature) -replace '\+', '-' -replace '/', '_' -replace '=')"
     }
-    <#
-    }
-    Else {
-      Throw "Payload does not have a exp field."
-    }
-    #>
   }
 
 }
