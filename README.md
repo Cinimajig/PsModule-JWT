@@ -7,10 +7,10 @@ Download the module-file and then import it, where you want to use it.
 # Importing the module
 Import-Module C:\MyModulePath\JWT.psm1
 
-# Generate a JSON-token from a JSON-payload.
+# Generate a JSON-token from a JSON-payload
 New-JWT -InputObject '{"iss":"http://myapp.com/","sub":"users/user1234","scope":"self, admins"}' -Algorithm HS256 -HmacSecret secret
 
-# Alternative use an hashtable/object.
+# Alternative use an hashtable/object
 $Claims = @{
     iat = 1434660338
     exp = 1434663938
