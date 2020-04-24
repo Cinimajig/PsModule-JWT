@@ -21,5 +21,5 @@ $Claims = @{
 $Claims | New-JWT -Algorithm HS256 -HmacSecret secret
 
 # Get-Help New-JWT
-New-JWT [-InputObject] <Object> [-Algorithm] {HS256 | HS384 | HS512} [-HmacSecret] <string> [-OutObject]  [<CommonParameters>]
+New-JWT [-InputObject] <Object> [-Algorithm] {HS256 | HS384 | HS512} [-HmacSecret] <string> [-OutObject] [<CommonParameters>]
 ```
