@@ -48,7 +48,7 @@ Function New-JWT {
     [Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()][String]$HmacSecret,
     [Parameter(Mandatory = $false)][Switch]$OutObject
   )
-  
+
   Begin {
     If ($null -ne $PSBoundParameters.HmacSecret -and $PSBoundParameters.HmacSecret -eq "") {
       Throw "Secret is not defined."
@@ -78,28 +78,29 @@ Function New-JWT {
       $JsonPayload = $InputObject | ConvertTo-Json -Compress
     }
 
-    If ($JsonPayload -match '\\?"exp\\?":[\d]{10,20}') {
+    # If ($JsonPayload -match '\\?"exp\\?":[\d]{10,20}') {
 
-      $Payload = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($JsonPayload)) -replace '\+', '-' -replace '/', '_' -replace '='
-      $Hash = [System.Security.Cryptography.HashAlgorithm]::Create($alg)
+    $Payload = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($JsonPayload)) -replace '\+', '-' -replace '/', '_' -replace '='
+    $Hash = [System.Security.Cryptography.HashAlgorithm]::Create($alg)
 
-      If ($HmacSecret) {
-        $Hash.Key = [System.Text.Encoding]::UTF8.GetBytes($HmacSecret)
-      }
+    If ($HmacSecret) {
+      $Hash.Key = [System.Text.Encoding]::UTF8.GetBytes($HmacSecret)
+    }
       
-      $Signature = $Hash.ComputeHash([System.Text.Encoding]::UTF8.GetBytes("$JsonHeaders.$Payload")) #| ConvertTo-Base64 -FromCharArray
+    $Signature = $Hash.ComputeHash([System.Text.Encoding]::UTF8.GetBytes("$JsonHeaders.$Payload")) #| ConvertTo-Base64 -FromCharArray
      
-      If ($OutObject) {
-        Return [JWTToken]::New($JsonHeaders, $Payload, ([System.Convert]::ToBase64String($Signature) -replace '\+', '-' -replace '/', '_' -replace '='))
-      }
-      Else {
-        Return "$JsonHeaders.$Payload.$([System.Convert]::ToBase64String($Signature) -replace '\+', '-' -replace '/', '_' -replace '=')"
-      }
+    If ($OutObject) {
+      Return [JWTToken]::New($JsonHeaders, $Payload, ([System.Convert]::ToBase64String($Signature) -replace '\+', '-' -replace '/', '_' -replace '='))
+    }
+    Else {
+      Return "$JsonHeaders.$Payload.$([System.Convert]::ToBase64String($Signature) -replace '\+', '-' -replace '/', '_' -replace '=')"
+    }
+    <#
     }
     Else {
       Throw "Payload does not have a exp field."
     }
-
+    #>
   }
 
 }
